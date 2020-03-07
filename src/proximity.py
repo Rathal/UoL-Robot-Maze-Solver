@@ -18,7 +18,7 @@ class Chatter:
 
         self.t = Twist()
         self.state = 0
-        self.proximity = 0
+        self.proximity = None
 
     def stateCB(self, state):
         self.state = state.data
@@ -45,12 +45,12 @@ class Chatter:
         else: self.proximity = 0
 
         if self.proximity != 0:
+            self.state_pub.publish(2)
+        elif self.state != 0:
             self.state_pub.publish(1)
-        else:
-            self.state_pub.publish(0)
         print self.state
         
-        if self.state == 1:
+        if self.state == 2:
 
             if self.proximity == 1:
                 self.t.angular.z = 0.5
@@ -71,6 +71,7 @@ c = Chatter()
 c.run()
 
 #States
-# 0 = go
-# 1 = Proximity
-# 2 = Head to wall
+# 0 = spin
+# 1 = go
+# 2 = Proximity
+# 3 = Head to wall

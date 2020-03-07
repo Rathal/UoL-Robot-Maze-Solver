@@ -6,7 +6,7 @@ from cv2 import destroyAllWindows, startWindowThread
 from cv2 import COLOR_BGR2GRAY, waitKey
 from cv2 import blur, Canny
 from cv2 import inRange, cvtColor, COLOR_BGR2HSV, findContours, RETR_TREE, CHAIN_APPROX_SIMPLE, contourArea, drawContours
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, LaserScan
 from cv_bridge import CvBridge
 import numpy as np
 from geometry_msgs.msg import Twist
@@ -21,6 +21,7 @@ class image_converter:
                                           Image, self.image_callback)
         #self.image_pub = rospy.Publisher('/result_topic', String)
         #self.blueError_pub = rospy.Publisher('/error/blue', Float64, queue_size=1)
+        self.scan_sub = rospy.Subscriber('/scan', LaserScan, self.laser_cb)
         self.cmd_vel_pub = rospy.Publisher('/mobile_base/commands/velocity', Twist, queue_size=1)
         self.state_sub = rospy.Subscriber('/state', Int16, self.stateCB)
         self.state_pub = rospy.Publisher('/state', Int16, queue_size=1)
@@ -30,6 +31,12 @@ class image_converter:
         self.twist = Twist()
         self.target = 0
         self.isBlue = False
+    
+    def laser_cb(self, e):
+        if self.state == 1:
+            if e.ranges[320] < 0.8:
+                print e.ranges[320]
+                self.state_pub.publish(0)
 
 
     def ImageMoments(self, mask, image, w):
@@ -96,6 +103,11 @@ class image_converter:
         #cv2.bitwise_and(cv_image, cv_image, mask=bgr_blue_mask)
 
         if self.state == 0:
+            if (self.FindTargert(bgr_green_mask, cv_image)): self.target = 1
+            elif (self.FindTargert(bgr_blue_mask, cv_image)): self.target = 1
+            if self.target > 0: self.state_pub.publish(1)
+
+        if self.state == 1:
             if (self.FindTargert(bgr_green_mask, cv_image)): self.target = 0
             elif (self.FindTargert(bgr_blue_mask, cv_image)): self.target = 1
             elif (self.FindTargert(bgr_red_mask, cv_image)): self.target = 2
