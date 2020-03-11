@@ -11,7 +11,7 @@ class BlueRotator:
     
     def cb(self, e):
         print e.data
-        error = e.data
+        error = e.dataelf.blueError_sub = rospy.Subscriber('/error/blue', Float64, callback=self.cb)
         angle = 0
         t = Twist()
         if error > 10.0:

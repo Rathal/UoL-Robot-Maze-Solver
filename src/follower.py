@@ -111,7 +111,7 @@ class image_converter:
             if (self.FindTargert(bgr_green_mask, cv_image)): self.target = 0
             elif (self.FindTargert(bgr_blue_mask, cv_image)): self.target = 1
             elif (self.FindTargert(bgr_red_mask, cv_image)): self.target = 2
-            elif (self.FindTargert(bgr_yellow_mask, cv_image)): self.target = 3
+            elif (self.FindTargert(bgr_yellow_mask, cv_image)): self.target = -3
             else: self.target = -1
 
             if self.target == 0:
