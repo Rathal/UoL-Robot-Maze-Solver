@@ -69,7 +69,7 @@ class Driver:
             print 'Origin: ', self.origin
             print 'Yaw: ', yaw
             print -abs(yaw)+abs(self.origin)
-            if abs(yaw - self.origin) < 3.1415/4:
+            if abs(yaw - self.origin) < 3.1415/8:
                 self.t.angular.z = 0.5
             else:
                 self.t.angular.z = 0
