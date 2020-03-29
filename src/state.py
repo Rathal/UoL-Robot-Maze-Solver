@@ -36,11 +36,12 @@ class StateManager:
         approved = False
         if self.state == 'Initialised' or self.state == 'Waiting':
             approved = True
-        elif self.state == 'Spin':
+        elif "Obstacle" in self.state:
             if "Turn To" in request.lstrip('req_'): approved = True
         
         if (approved):
             print 'Request Approved'
+            sleep(0.1)
             self.state_pub.publish(request.lstrip('req_'))
         else: print 'Request Denied'
     
@@ -56,6 +57,6 @@ class StateManager:
 
 
 stateManager = StateManager()
-sleep(0.5)
+sleep(5)
 stateManager.boot()
 rospy.spin()
