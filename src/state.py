@@ -17,8 +17,9 @@ class StateManager:
 
     def stateCB(self, state):
         string = state.data
+        print 'Incoming: ', string
         if string.startswith('req_'):
-            print 'request'
+            print 'Request'
             self.determineRequest(string)
         else: self.state = string
 
@@ -27,18 +28,19 @@ class StateManager:
         if self.isSpinning and self.state == "Waiting":
             self.state_pub.publish(String(data="Update Spin"))
 
-        self.list.append(self.state)
-        print 'List:'
-        for x in self.list:
-            print(x)
+        # self.list.append(self.state)
+        # print 'List:'
+        # for x in self.list:
+        #     print(x)
         
     def determineRequest(self, request):
         approved = False
         if self.state == 'Initialised' or self.state == 'Waiting':
             approved = True
-        elif "Obstacle" in self.state:
-            if "Turn To" in request.lstrip('req_'): approved = True
-        
+        elif "Obstacle" in self.state or self.state == "Red":
+            if "Turn To" in request:
+                if "90" in request or "180" in request or "270" in request or "360" in request or "0" in request:
+                    approved = True      
         if (approved):
             print 'Request Approved'
             sleep(0.1)
@@ -57,6 +59,6 @@ class StateManager:
 
 
 stateManager = StateManager()
-sleep(5)
+sleep(1)
 stateManager.boot()
 rospy.spin()

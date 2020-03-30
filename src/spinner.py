@@ -51,8 +51,10 @@ class Searcher:
             if pi/4 < angle <  3*pi/4: cardinal = pi/2
             elif 3*pi/4 < angle < 5*pi/4: cardinal = pi
             elif 5*pi/4 < angle < 7*pi/4: cardinal = 3*pi/2
+            #else: cardinal = 0
             elif 0 < angle < pi/4: cardinal = 0
-            else: cardinal = 360
+            elif 7*pi/4 < angle < 2*pi: cardinal = 2*pi
+            #else: cardinal = 2*pi
             print 'Cardinal: ', cardinal
             
             return cardinal
@@ -87,22 +89,22 @@ class Searcher:
         def obstacleDetected(yaw):
             import random
 
-            proximity = self.state.lstrip('Obstacle Detected: ')
-            iProximity = int(proximity)
+            #proximity = self.state.lstrip('Obstacle Detected: ')
             cardinal = degree(getClosestCardinal(yaw))
             #newCardinal = cardinal + (iProximity*90) #SHOULD BE -
             if bool(random.getrandbits(1)): newCardinal = cardinal +90
             else: newCardinal = cardinal -90
             #newCardinal = cardinal +90
             if newCardinal < 0: newCardinal += 360
+            elif newCardinal > 360: newCardinal -= 360
             return int(newCardinal)
             
         def stayTrue(yaw):
             heading = getClosestCardinal(yaw)
-            if yaw < heading-0.087:
+            if yaw < heading-0.035:
                 self.t.angular.z = 0.1
                 self.spinner_pub.publish(self.t)
-            elif yaw > heading+0.087:
+            elif yaw > heading+0.035:
                 self.t.angular.z = -0.1
                 self.spinner_pub.publish(self.t)
             #else: self.t.angular.z = 0
@@ -117,6 +119,7 @@ class Searcher:
 
         if self.state == 'Initialised':
             # faceAngle(3*pi/2, yaw)
+            print 'Initialising. Turning to 270'
             self.state_pub.publish(String(data="req_Turn To 270"))
         elif self.state == 'Turn To 90':
             print 'Turning to: 90'
@@ -127,13 +130,17 @@ class Searcher:
         elif self.state == 'Turn To 270':
             print 'Turning to: 270'
             turnDegree(90, yaw) ##0.1 or 359.9 for North
-        elif self.state == 'Turn To 360':
-            print 'Turning to: 360'
-            turnDegree(359.9, yaw) ##0.1 or 359.9 for North
-        elif self.state == 'Turn To 0':
-            print 'Turning to: 0'
-            turnDegree(0.1, yaw) ##0.1 or 359.9 for North
-        elif self.state.startswith("Obstacle Detected: "):
+        elif self.state == 'Turn To 360' or self.state == 'Turn To 0':
+            if degree(yaw) < 180:
+                print 'Turning to: 360'
+                turnDegree(359.9, yaw) ##0.1 or 359.9 for North
+            else:
+                print 'Turning to: 0'
+                turnDegree(0.1, yaw)
+        # elif self.state == 'Turn To 0':
+        #     print 'Turning to: 0'
+        #     turnDegree(0.1, yaw) ##0.1 or 359.9 for North
+        elif self.state.startswith("Obstacle Detected: ") or self.state == "Red":
             newDirection = obstacleDetected(yaw)
             msg = "req_Turn To " + str(newDirection)
             self.state_pub.publish(String(data=msg))
