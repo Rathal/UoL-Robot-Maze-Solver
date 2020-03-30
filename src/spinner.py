@@ -51,7 +51,8 @@ class Searcher:
             if pi/4 < angle <  3*pi/4: cardinal = pi/2
             elif 3*pi/4 < angle < 5*pi/4: cardinal = pi
             elif 5*pi/4 < angle < 7*pi/4: cardinal = 3*pi/2
-            else: cardinal = 0
+            elif 0 < angle < pi/4: cardinal = 0
+            else: cardinal = 360
             print 'Cardinal: ', cardinal
             
             return cardinal
@@ -84,13 +85,28 @@ class Searcher:
             faceAngle(radian, yaw)
 
         def obstacleDetected(yaw):
+            import random
+
             proximity = self.state.lstrip('Obstacle Detected: ')
             iProximity = int(proximity)
             cardinal = degree(getClosestCardinal(yaw))
-            newCardinal = cardinal + (iProximity*90) #SHOULD BE -
+            #newCardinal = cardinal + (iProximity*90) #SHOULD BE -
+            if bool(random.getrandbits(1)): newCardinal = cardinal +90
+            else: newCardinal = cardinal -90
+            #newCardinal = cardinal +90
             if newCardinal < 0: newCardinal += 360
             return int(newCardinal)
             
+        def stayTrue(yaw):
+            heading = getClosestCardinal(yaw)
+            if yaw < heading-0.087:
+                self.t.angular.z = 0.1
+                self.spinner_pub.publish(self.t)
+            elif yaw > heading+0.087:
+                self.t.angular.z = -0.1
+                self.spinner_pub.publish(self.t)
+            #else: self.t.angular.z = 0
+            #else: self.t.angular.z = -0.1
 
 
         ori = odom.pose.pose.orientation
@@ -121,6 +137,8 @@ class Searcher:
             newDirection = obstacleDetected(yaw)
             msg = "req_Turn To " + str(newDirection)
             self.state_pub.publish(String(data=msg))
+        elif self.state == "Drive":
+            stayTrue(yaw)
         
         elif self.state == 'Waiting':
             print 'Facing: ', yaw, ' Closest to:', degree(getClosestCardinal(yaw))

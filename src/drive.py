@@ -24,7 +24,7 @@ class Driver:
     def odomCB(self, odom):
         if self.state == "Drive":
             print 'Driving'
-            self.Drive(0.1)
+            self.Drive(0.2)
         else:
             self.t.linear.x = 0
             self.driver_pub.publish(self.t)
