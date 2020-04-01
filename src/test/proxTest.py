@@ -74,7 +74,7 @@ class Proximity:
                 print 'Else'
                 self.t.angular.z = -0.1
                 self.t.linear.x= 0.15
-            if self.foundWall == False:
+            if self.foundWall == True:
                 if Ranges[0][0] > distance+0.3:
                     print 'Stay True 1+'
                     self.t.angular.z = 0.5
