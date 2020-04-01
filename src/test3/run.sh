@@ -1,2 +1,2 @@
-gnome-terminal -e "python prox.py"
-python follower.py
+gnome-terminal -e "python drive.py"
+python vision.py

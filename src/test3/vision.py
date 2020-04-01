@@ -19,9 +19,8 @@ class image_converter:
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber("/camera/rgb/image_raw",
                                           Image, self.image_callback)
-        #self.image_pub = rospy.Publisher('/result_topic', String)
-        #self.blueError_pub = rospy.Publisher('/error/blue', Float64, queue_size=1)
-        self.scan_sub = rospy.Subscriber('/scan', LaserScan, self.laser_cb)
+        
+    
         self.cmd_vel_pub = rospy.Publisher('/mobile_base/commands/velocity', Twist, queue_size=1)
         self.state_sub = rospy.Subscriber('/state', String, self.stateCB)
         self.state_pub = rospy.Publisher('/state', String, queue_size=1)
@@ -30,23 +29,9 @@ class image_converter:
         
         self.twist = Twist()
         self.target = 0
-        self.isBlue = False
-
-        self.init = True
-    
-    def laser_cb(self, e):
-        a = 0
-        # import math
-        # if self.state != "Drive":
-        #     if e.ranges[320] < 1 or math.isnan(e.ranges[320]):
-        #         self.state_pub.publish(String(data="Stop"))
-        #         print e.ranges[320]
-        #         self.twist.angular.z = 0.15
-        #         self.twist.linear.x = 0.15
-        #         self.cmd_vel_pub.publish(self.twist)
-        #     else: self.state_pub.publish(String(data="Drive"))
 
 
+    #Legacy Code Unused
     def ImageMoments(self, mask, image, w):
         M = cv2.moments(mask)
         if M['m00'] > 0:
@@ -62,28 +47,29 @@ class image_converter:
             print err
 
     def stateCB(self, state):
+        #Sets state to state subscription
         self.state = state.data
 
-    def FindTargert(self, mask, image):
+    def FindTarget(self, mask, image):
+        #Returns mean location of colours that fit the mask on the image
         M = cv2.moments(mask)
         return (M['m00'] > 0)
 
     def image_callback(self, data):
-        # namedWindow("Image window")
-        # cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-
-        # imshow("Image window", cv_image)
-        # waitKey(1)
 
         namedWindow("Image window", 1)
-        #namedWindow("Yellow window", 1)
 
+        #Gets image from robot and set it to BGR
         cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
         h, w, d = cv_image.shape
 
+        #Crops CV image to ensure that all colours found is from directly in front of it
+        #This is to make sure that the robot doesn't see red out of the corner of it's eye and get scared and not walk down an otherwise valid route
         cv_image = cv_image[380:400, 200:500]
 
+
+        #Define Masks ranges in BGR
         bgr_blue_mask = inRange(cv_image,
                                  np.array((100, 0, 0)), #230
                                  np.array((255, 5, 5))) #255
@@ -96,39 +82,33 @@ class image_converter:
                                  np.array((0, 0, 100)), #230
                                  np.array((5, 5, 255))) #255
 
-        # lower_yellow = np.array([40,100,80]) #102, 102, 0 #RGB 
-        # upper_yellow = np.array([80,255,250])
         lower_yellow = np.array([0, 90, 90])
         upper_yellow = np.array([10, 255, 255])
         bgr_yellow_mask = inRange(cv_image, lower_yellow, upper_yellow)
 
         hsv_img = cvtColor(cv_image, COLOR_BGR2HSV)
-        # hsv_thresh = inRange(hsv_img,
-        #                          np.array((0, 150, 50)),
-        #                          np.array((255, 255, 255)))
 
         print (np.mean(hsv_img[:, :, 0]))
         print (np.mean(hsv_img[:, :, 1]))
         print (np.mean(hsv_img[:, :, 2]))
         print ('====')
 
-        #cv2.bitwise_and(cv_image, cv_image, mask=bgr_blue_mask)
 
-        # if "Turn" in self.state:
-        #     if (self.FindTargert(bgr_green_mask, cv_image)): self.target = 1
-        #     elif (self.FindTargert(bgr_blue_mask, cv_image)): self.target = 1
-        #     if self.target > 0: self.state_pub.publish(1)
-
-        #if self.state == "Drive" or self.state == "Red":
+        #Stop state to override, largely legacy code from iteration 1
         if self.state != "Stop":
-            if (self.FindTargert(bgr_green_mask, cv_image)): self.target = 0
-            # elif (self.FindTargert(bgr_blue_mask, cv_image)): self.target = 1
-            elif (self.FindTargert(bgr_red_mask, cv_image)): self.target = 2
-            # elif (self.FindTargert(bgr_yellow_mask, cv_image)): self.target = 3
+
+            #If can see a green, blue, red, or yellow, set target state to ID of found - Largely legacy code from iteration 2
+            if (self.FindTarget(bgr_green_mask, cv_image)): self.target = 0
+            # elif (self.FindTarget(bgr_blue_mask, cv_image)): self.target = 1 ##LEGACY CODE
+            elif (self.FindTarget(bgr_red_mask, cv_image)): self.target = 2
+            # elif (self.FindTarget(bgr_yellow_mask, cv_image)): self.target = 3 ##LEGACY CODE
             else: self.target = -1
 
+            #If a target has been found, do something with it: Set State to colour
+            #ImageMoments beelines directly to target
+
             if self.target == 0:
-                # self.ImageMoments(bgr_green_mask, cv_image, w)
+                # self.ImageMoments(bgr_green_mask, cv_image, w) ##Legacy Code
                 if self.state != "Green": self.state_pub.publish(String(data="Green"))
             elif self.target == 1:
                 self.ImageMoments(bgr_blue_mask, cv_image, w)
@@ -140,31 +120,10 @@ class image_converter:
                 if self.state != "Yellow": self.state_pub.publish(String(data="Yellow"))
             else:
                 print'Nothing Found'
-                # self.twist.linear.x = 0
-                # self.twist.angular.z = 0.1
-                # self.cmd_vel_pub.publish(self.twist)
                 if self.state != "Drive": self.state_pub.publish(String(data="Drive"))
-                # self.twist.angular.z = -2
-                # self.twist.linear.x = -0.1
-                # self.cmd_vel_pub.publish(self.twist)
-
-            # if (self.isBlue):
-            # M = cv2.moments(bgr_blue_mask)
-            # if M['m00'] > 0:
-            #     self.ImageMoments(bgr_blue_mask, cv_image, w)
-            # else:
-            #     M = cv2.moments(bgr_yellow_mask)
-            #     if M['m00'] > 0:
-            #         self.ImageMoments(bgr_yellow_mask, cv_image, w)
-            #     else:
-            #         self.twist.angular.z = -0.1
-            #         self.cmd_vel_pub.publish(self.twist)
-            
-        # else:
-        # self.ImageMoments(bgr_blue_mask, cv_image, w)
         
 
-        imshow("Image window", cv_image) #bgr_blue_mask
+        imshow("Image window", cv_image) #Show, in a window, the image
         waitKey(1)
 
 
