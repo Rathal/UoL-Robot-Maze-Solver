@@ -156,7 +156,7 @@ class Proximity:
             # self.driver_pub.publish(self.t)
         self.t.linear.x = 0.1
         self.driver_pub.publish(self.t)
-        self.state_pub.publish(String(data="TEST"))
+        # self.state_pub.publish(String(data="TEST"))
         #else: self.t.angular.z = 0
         #else: self.t.angular.z = -0.1
 
@@ -212,6 +212,24 @@ class Proximity:
             return True
         else: return False
 
+    def Go(self, distance):
+        if distance > 1:
+            if self.goal == -1:
+                self.goal = distance - 1
+            if distance > self.goal:
+                self.stayTrue()
+            else:
+                self.t.linear.x = 0
+                self.t.angular.z = 0
+                self.goal = -1
+                self.stateID = 0
+            print 'Goal: ', self.goal, ' Distance: ', distance
+        else:
+            self.t.linear.x = 0
+            self.t.angular.z = 0
+
+
+
     def laser_cb(self, laser_msg):
         distance = 0.5
         Ranges = list(self.Chunk(laser_msg.ranges, 320))
@@ -236,6 +254,13 @@ class Proximity:
                 elif self.stateID.is_integer():
                     self.stateID = -1
                     print 'Exit Found'
+
+        # GO()
+        # if Ranges[1][0] > 0.5 and self.stateID == -1:
+        #     self.Go(Ranges[1][0])
+        # else:
+        #     self.t.linear.x = 0
+        #     self.t.angular.z = 0
                 
 
 
