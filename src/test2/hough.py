@@ -66,7 +66,7 @@ class image_converter:
         #namedWindow("Yellow window", 1)
 
         cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        crop_image = cv_image[0:400, 0:640]
+        crop_image = cv_image[300:400, 0:640]
         gray = cv2.cvtColor(crop_image,cv2.COLOR_BGR2GRAY)
         edges = cv2.Canny(gray,50,150,apertureSize = 3)
 

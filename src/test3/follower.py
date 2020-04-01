@@ -35,13 +35,7 @@ class image_converter:
         self.init = True
     
     def laser_cb(self, e):
-        if any(r < 0.5 for r in e.ranges):
-            print 'ADHASKHJDHASJKHDASKJHD'
-            self.state_pub.publish(String(data="Stop"))
-            self.twist.linear.x = 0
-            self.twist.angular.z = 0.1
-            self.cmd_vel_pub.publish(self.twist)
-        else: self.state_pub.publish(String(data="Drive"))
+        a = 0
         # import math
         # if self.state != "Drive":
         #     if e.ranges[320] < 1 or math.isnan(e.ranges[320]):
@@ -88,6 +82,8 @@ class image_converter:
 
         h, w, d = cv_image.shape
 
+        cv_image = cv_image[380:400, 200:500]
+
         bgr_blue_mask = inRange(cv_image,
                                  np.array((100, 0, 0)), #230
                                  np.array((255, 5, 5))) #255
@@ -126,13 +122,13 @@ class image_converter:
         #if self.state == "Drive" or self.state == "Red":
         if self.state != "Stop":
             if (self.FindTargert(bgr_green_mask, cv_image)): self.target = 0
-            elif (self.FindTargert(bgr_blue_mask, cv_image)): self.target = 1
+            # elif (self.FindTargert(bgr_blue_mask, cv_image)): self.target = 1
             elif (self.FindTargert(bgr_red_mask, cv_image)): self.target = 2
-            elif (self.FindTargert(bgr_yellow_mask, cv_image)): self.target = 3
+            # elif (self.FindTargert(bgr_yellow_mask, cv_image)): self.target = 3
             else: self.target = -1
 
             if self.target == 0:
-                self.ImageMoments(bgr_green_mask, cv_image, w)
+                # self.ImageMoments(bgr_green_mask, cv_image, w)
                 if self.state != "Green": self.state_pub.publish(String(data="Green"))
             elif self.target == 1:
                 self.ImageMoments(bgr_blue_mask, cv_image, w)
@@ -144,9 +140,9 @@ class image_converter:
                 if self.state != "Yellow": self.state_pub.publish(String(data="Yellow"))
             else:
                 print'Nothing Found'
-                self.twist.linear.x = 0
-                self.twist.angular.z = 0.1
-                self.cmd_vel_pub.publish(self.twist)
+                # self.twist.linear.x = 0
+                # self.twist.angular.z = 0.1
+                # self.cmd_vel_pub.publish(self.twist)
                 if self.state != "Drive": self.state_pub.publish(String(data="Drive"))
                 # self.twist.angular.z = -2
                 # self.twist.linear.x = -0.1
@@ -166,10 +162,6 @@ class image_converter:
             
         # else:
         # self.ImageMoments(bgr_blue_mask, cv_image, w)
-        if self.state == "Red":
-            self.twist.linear.x = 0
-            self.twist.angular.z = 2
-            self.cmd_vel_pub.publish(self.twist)
         
 
         imshow("Image window", cv_image) #bgr_blue_mask

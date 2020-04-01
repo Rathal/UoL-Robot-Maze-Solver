@@ -1,2 +1,2 @@
-gnome-terminal -e "python proxTest.py"
+gnome-terminal -e "python prox.py"
 python follower.py

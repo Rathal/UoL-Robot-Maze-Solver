@@ -8,7 +8,6 @@ from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import numpy as np
 from math import pi, ceil
-#from kobuki_msgs.msg import BumperEvent
 
 class Proximity:
     def __init__(self):
@@ -33,6 +32,7 @@ class Proximity:
         self.stateID = 0
         self.turning = False
         self.goal = -1
+        self.leftTurns = 0
 
     
 
@@ -148,10 +148,14 @@ class Proximity:
         
     def stayTrue(self):
         heading = self.getClosestCardinal(self.yaw)
-        if self.yaw < heading-0.0174533:
+        if heading == 0.0 or heading == 2*pi:
+            'ERROR INCOMING'
+        elif self.yaw < heading-0.0174533:
+            print 'Adjusting Left'
             self.t.angular.z = 0.1
             # self.driver_pub.publish(self.t)
         elif self.yaw > heading+0.0174533:
+            print 'Adjusting Left'
             self.t.angular.z = -0.1
             # self.driver_pub.publish(self.t)
         self.t.linear.x = 0.1
@@ -170,9 +174,10 @@ class Proximity:
         self.yaw = yaw
 
     def stateCB(self, state):
-        print "updating state"
-        self.state = state.data
-        print state
+        if state.data != self.state:
+            print "updating state"
+            self.state = state.data
+            print state
 
     def Chunk(self, list, n):
         for i in xrange(0, len(list), n):
@@ -213,21 +218,56 @@ class Proximity:
         else: return False
 
     def Go(self, distance):
+        print 'Distance: ', distance
         if distance > 1:
+            print 'Good Distance'
             if self.goal == -1:
+                print 'Setting Goal'
                 self.goal = distance - 1
             if distance > self.goal:
+                print 'Distance: ', distance, ' Goal: ', self.goal
                 self.stayTrue()
             else:
+                print 'Done'
                 self.t.linear.x = 0
                 self.t.angular.z = 0
                 self.goal = -1
                 self.stateID = 0
             print 'Goal: ', self.goal, ' Distance: ', distance
+        elif distance > 0.5:
+            self.stayTrue()
         else:
+            print 'Done'
             self.t.linear.x = 0
             self.t.angular.z = 0
+            self.goal = -1
+            self.stateID = 0
 
+    def turnByDegree(self, degree):
+        self.turning = True
+        rad = 2*0.0174533
+        cardinal = self.degree(self.getClosestCardinal(self.yaw))
+        #If No Goal Set, Set goal
+        if self.goal == -1: #Closest Direction + Change -> Radians
+            print 'Goal Set'
+            self.goal = (cardinal + degree) * pi / 180
+            if self.goal > 2*pi: self.goal -= 2*pi
+        ##Turn towards goal
+        #if self.goal != 2*pi or self.goal != 0:
+        if self.goal - rad > self.yaw:
+            print 'Turning Left'
+            self.t.angular.z = 0.35 #0.25
+        elif self.goal + rad < self.yaw:
+            print 'Turning Right'
+            self.t.angular.z = -0.35 #-0.25
+        else:
+            print 'Close Enough'
+            self.t.angular.z = 0
+            self.stateID += 1
+            self.goal = -1
+            self.turning = False
+        print 'Goal: ', self.goal, ' Yaw: ', self.yaw
+        self.driver_pub.publish(self.t)
 
 
     def laser_cb(self, laser_msg):
@@ -236,61 +276,49 @@ class Proximity:
         
         if self.state != "Stop": self.determineProximity(distance, Ranges)
 
-        # print '[0][0]: ', Ranges[0][0]
-        # print '[0][320]: ', Ranges[0][319]
-        # print '[1][0]: ', Ranges[1][0]
-        # print '[1][320]: ', Ranges[1][319]
+
+        # if 0 <= self.stateID < 1:
+        #     print 'Turning'
+        #     self.turnByDegree(90)
+
+
+        # MAIN LOOP
+        # Loop is:
+        #   TurnLeft()
+        #   If NotBlocked:
+        #       Go()
+        #   Else:
+        #       TurnRight()
 
         if 0 <= self.stateID < 1:
-            self.turnLeft()
+            #Turn +90 degrees (left, Anti-Clockwise)
+            self.turnByDegree(90) 
+            if self.turning == False:
+                #Keep track of how many left turns have been made before a right. This is to stop a loop
+                self.leftTurns += 1
+            print 'Left Turns: ', self.leftTurns
+        #If initial left turn has been completed
         else:
             if self.stateID >= 1:
-                print 'Checking'
-                if self.isAheadBlocked(Ranges[1][0]):
+                print 'Checking Ahead'
+                #Check to see if the tile 1m ahead is fit for travel
+                blocked = self.isAheadBlocked(Ranges[1][0])
+                #If robot has made 3 left turns in a row, take a right. 4 lefts is a loop
+                if blocked or self.turning or self.leftTurns > 3: 
                     print 'Ahead is Blocked: '
-                    self.turning = True
-                    while self.turning:
-                        self.turnRight()
-                elif self.stateID.is_integer():
+                    #Right turn, so reset left turn counter
+                    self.leftTurns = 0
+                    #Turn -90 degrees (right, clockwise)
+                    self.turnByDegree(-90)
+                #If the path ahead is clear, and robot not currently turning
+                else:
                     self.stateID = -1
                     print 'Exit Found'
-
-        # GO()
-        # if Ranges[1][0] > 0.5 and self.stateID == -1:
-        #     self.Go(Ranges[1][0])
-        # else:
-        #     self.t.linear.x = 0
-        #     self.t.angular.z = 0
+            #If an exit has been found
+            elif self.stateID == -1:
+                #Go straight ahead 1m
+                self.Go(Ranges[1][0])
                 
-
-
-
-        
-        #TurnLeft
-        #While AheadNotFree:
-        #   TurnRight
-        #Go
-
-        #TurnLeft():
-        #   degree = GetClosestCardinal() +90
-        #   FaceDegree(degree)
-
-        #TurnRight():
-        #   degree = GetClosestCardinal() -90
-        #   FaceDegree(degree)
-
-        #IsAheadFree():
-        #   if state == Red:
-        #       False
-        #   elif range[middle] < 1:
-        #       False
-        #   else: True
-
-        #Go():
-        #   origin = range[middle]
-        #   while origin - range[middle] < 1:
-        #       StayTrue()
-
         self.driver_pub.publish(self.t)
 
 proximity = Proximity()
