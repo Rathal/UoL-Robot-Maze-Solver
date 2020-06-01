@@ -1,23 +1,16 @@
-# RoboticsAssignment
+# Robotics Assignment - University of Lincoln (2020)
+#Daniel Guy
 
-Catkin_make the ~
-
-sudo apt-get update && sudo apt-get upgrade && sudo apt-get install ros-kinetic-uol-cmp3103m
-or sudo apt-get purge "*gazebo*"
-
-roslaunch uol_turtlebot_simulator maze1.launch
-
-proximity.py - to stop hitting things
-follower.py - to head towards goals
+#Launch Instructions
+Run "Catkin_make" in /src
+Run ./run.sh
+	If error installing gazebo, remove with "sudo apt-get purge "*gazebo*"" and try again
 
 
-#-Move metre at a time
-#-Look Left
-#  +Get Distance to wall
-#-Look Right
-#  +Get Distance to wall
-#-Go Towards largest distance IF NO BLUE OR GREEN OR RED
-#-Go until wall < 0.5m away
+# /run.sh updates gazebo package and launches maze 1. To launch another maze, run:
+./1.sh
+./2.sh
+./3.sh
 
-
-
+To run finished product, run
+./src/final/run.sh
